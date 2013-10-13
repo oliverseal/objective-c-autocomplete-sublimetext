@@ -15,3 +15,8 @@ probably be expanded.
 Typing `- (<char>)` will look up the header for the current `.m` filename and offer 
 auto-fills for the methods declared in the header. 
 Responses will be in snippet format so you can tab through the options.
+
+# Useful things
+
+Try mixing with https://github.com/echoldman/Sublime-Text-Objective-C-Snippets 
+for extra helpfulness.
