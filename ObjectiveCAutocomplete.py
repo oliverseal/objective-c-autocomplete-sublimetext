@@ -61,7 +61,7 @@ class ObjectiveCDeclaredMethodAutoComplete(sublime_plugin.EventListener):
       return None
 
     # don't look up things for headers.
-    if os.path.splitext(view.file_name())[1] == '.h' or os.path.splitext(view.file_name())[1] == '.hpp'
+    if os.path.splitext(view.file_name())[1] == '.h' or os.path.splitext(view.file_name())[1] == '.hpp':
       return None
 
     # only hit the filesystem if this is a new method line
@@ -108,6 +108,57 @@ class ObjectiveCDeclaredMethodAutoComplete(sublime_plugin.EventListener):
 
     return None
 
+class ObjectiveCSynthesizeAutoComplete(sublime_plugin.EventListener):
+  def on_query_completions(self, view, prefix, locations):
+    # if this isn't objc or c then we should bail
+    scope_name = view.scope_name(locations[0])
+
+    if scope_name.find('source.objc') != 0:
+      return None
+
+    # don't look up things for headers.
+    if os.path.splitext(view.file_name())[1] == '.h' or os.path.splitext(view.file_name())[1] == '.hpp':
+      return None
+
+    # only hit the filesystem if this is a new method line
+    full_line_region = view.full_line(locations[0])
+    full_line = view.substr(full_line_region)
+
+    # only look up methods if this is a line for a synthesize
+    synthesize_line_search = r'\s*@synthesize '
+    matches = re.match(synthesize_line_search, full_line)
+    if matches:
+      header_file = os.path.splitext(view.file_name())[0] + '.h'
+      properties = extract_objc_properties(header_file)
+
+      triggers = []
+      for prop in properties:
+        parts = prop.split(' ')
+        if len(parts) > 0:
+          name = parts[-1];
+          triggers.append((prop, name.replace('*', '')));
+
+      return triggers;
+
+    return None
+
+def extract_objc_properties(file_path):
+  results = []
+  # open the file
+  fh = open(file_path, 'r')
+  header = fh.read()
+  fh.close()
+
+  method_line_search = re.compile(r'@property\s*(?:\(.+?\)|)(.+?);', re.MULTILINE + re.DOTALL)
+  matches = re.findall(method_line_search, header)
+
+  for match in matches:
+    line = re.sub(r'\\(\s+)', ' ', match)
+    line = re.sub(r'  ', ' ', line)
+    results.append(line)
+
+  # get all the lines
+  return results
 
 def extract_objc_methods(file_path):
   results = []
@@ -126,3 +177,5 @@ def extract_objc_methods(file_path):
 
   # get all the lines
   return results
+
+
