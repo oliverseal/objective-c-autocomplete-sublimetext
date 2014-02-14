@@ -6,6 +6,13 @@ import sublime
 import sublime_plugin
 import re
 
+class ObjectiveCHeaderAutoCompleteTextCommand(sublime_plugin.TextCommand):
+  def run(self, view, args):
+    quote_edit = view.begin_edit()
+    # insert the space and quote
+    view.insert(quote_edit, full_line_region.end()-1, ' "')
+    view.end_edit(quote_edit)
+
 class ObjectiveCHeaderAutoComplete(sublime_plugin.EventListener):
   def on_query_completions(self, view, prefix, locations):
     # if this isn't objc or c then we should bail
@@ -31,14 +38,14 @@ class ObjectiveCHeaderAutoComplete(sublime_plugin.EventListener):
       else:
         file_name_so_far = ''
 
-      if file_name_so_far[len(file_name_so_far)-1] == '"':
-        file_name_so_far = file_name_so_far[0:len(file_name_so_far)-1]
+      length = len(file_name_so_far)
+      print(file_name_so_far)
+      if length > 0:
+        if file_name_so_far[length-1] == '"':
+          file_name_so_far = file_name_so_far[0:len(file_name_so_far)-1]
 
       if full_line == '#import\n' or full_line == '#include\n':
-        quote_edit = view.begin_edit()
-        # insert the space and quote
-        view.insert(quote_edit, full_line_region.end()-1, ' "')
-        view.end_edit(quote_edit)
+        view.run_command('objective_c_header_auto_complete')
 
       working_dir = os.path.dirname(view.file_name())
       # loop recursively through sub directories
@@ -51,6 +58,13 @@ class ObjectiveCHeaderAutoComplete(sublime_plugin.EventListener):
       return (triggers, sublime.INHIBIT_WORD_COMPLETIONS)
 
     return None
+
+
+class ObjectiveCDeclaredMethodAutoCompleteTextCommand(sublime_plugin.TextCommand):
+  def run(self, view, args):
+    paren_edit = view.begin_edit()
+    view.erase(paren_edit, args[0])
+    view.end_edit(paren_edit)
 
 class ObjectiveCDeclaredMethodAutoComplete(sublime_plugin.EventListener):
   def on_query_completions(self, view, prefix, locations):
@@ -100,9 +114,7 @@ class ObjectiveCDeclaredMethodAutoComplete(sublime_plugin.EventListener):
 
       if full_line.find('- (') == 0 and ends_in_parenthesis:
         # delete that last paranthesis
-        paren_edit = view.begin_edit()
-        view.erase(paren_edit, sublime.Region(locations[0], locations[0]+1))
-        view.end_edit(paren_edit)
+        view.run_command('objective_c_declared_method_auto_complete', sublime.Region(locations[0], locations[0]+1))
 
       return (triggers, sublime.INHIBIT_WORD_COMPLETIONS)
 
